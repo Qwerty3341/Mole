@@ -7,7 +7,7 @@ char *read_meminfo() {
 	// Open meminfo for get the data
 	FILE *meminfo_file = fopen("/proc/meminfo", "r");
 	if (meminfo_file == NULL) { /* fopen fail */
-		perror("ERROR reading /proc/meminfo");
+		perror("Error reading /proc/meminfo");
 		return NULL;
 	}
 
@@ -32,17 +32,16 @@ char *read_meminfo() {
 	return buffer;
 }
 
-
-long extract_data_from_meminfo(char *meminfo_content, char *field_name) {
+long parse_field_meminfo(char *meminfo_content, char *field_name) {
 	/* RAM and Swap */
 	char *finded = strstr(meminfo_content, field_name);
 	if (finded == NULL) { /* field not found */
-		return  -1;
+		return -1;
 	}
 
 	finded = strchr(finded, ':');
 	if (finded == NULL) { /* field not found */
-		return  -1;
+		return -1;
 	}
 
 	long value = atol(finded + 1);
@@ -50,10 +49,19 @@ long extract_data_from_meminfo(char *meminfo_content, char *field_name) {
 	return value;
 }
 
+void extract_data_from_meminfo() {
+	char *meminfo = read_meminfo();
+	long ram_total = parse_field_meminfo(meminfo, "MemTotal");
+	long ram_free = parse_field_meminfo(meminfo, "MemFree");
+	long ram_available = parse_field_meminfo(meminfo, "MemAvailable");
+	long swap_total = parse_field_meminfo(meminfo, "SwapTotal");
+	long swap_available = parse_field_meminfo(meminfo, "SwapFree");
+}
+
 int main() {
 	char *meminfo = read_meminfo();
 	if (meminfo != NULL) {
-		long t = extract_data_from_meminfo(meminfo, "MemFree");
+		long t = parse_field_meminfo(meminfo, "MemFree");
 		printf("%ld\n", t);
 		free(meminfo);
 	}
