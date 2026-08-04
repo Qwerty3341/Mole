@@ -32,13 +32,30 @@ char *read_meminfo() {
 	return buffer;
 }
 
-void print_info() {}
+
+long extract_data_from_meminfo(char *meminfo_content, char *field_name) {
+	/* RAM and Swap */
+	char *finded = strstr(meminfo_content, field_name);
+	if (finded == NULL) { /* field not found */
+		return  -1;
+	}
+
+	finded = strchr(finded, ':');
+	if (finded == NULL) { /* field not found */
+		return  -1;
+	}
+
+	long value = atol(finded + 1);
+
+	return value;
+}
 
 int main() {
-	char *ram = read_meminfo();
-	if (ram != NULL) {
-		printf("%s", ram);
-		free(ram);
+	char *meminfo = read_meminfo();
+	if (meminfo != NULL) {
+		long t = extract_data_from_meminfo(meminfo, "MemFree");
+		printf("%ld\n", t);
+		free(meminfo);
 	}
 	return 0;
 }
