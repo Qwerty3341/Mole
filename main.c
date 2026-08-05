@@ -49,21 +49,38 @@ long parse_field_meminfo(char *meminfo_content, char *field_name) {
 	return value;
 }
 
-void extract_data_from_meminfo() {
+typedef struct {
+	long ram_total;
+	long ram_free;
+	long ram_available;
+	long swap_total;
+	long swap_available;
+} meminfo_data;
+
+meminfo_data extract_data_from_meminfo(void) {
+	meminfo_data data = {0};
 	char *meminfo = read_meminfo();
-	long ram_total = parse_field_meminfo(meminfo, "MemTotal");
-	long ram_free = parse_field_meminfo(meminfo, "MemFree");
-	long ram_available = parse_field_meminfo(meminfo, "MemAvailable");
-	long swap_total = parse_field_meminfo(meminfo, "SwapTotal");
-	long swap_available = parse_field_meminfo(meminfo, "SwapFree");
+	if (!meminfo) {
+		return data;
+	}
+	data.ram_total = parse_field_meminfo(meminfo, "MemTotal");
+	data.ram_free = parse_field_meminfo(meminfo, "MemFree");
+	data.ram_available = parse_field_meminfo(meminfo, "MemAvailable");
+	data.swap_total = parse_field_meminfo(meminfo, "SwapTotal");
+	data.swap_available = parse_field_meminfo(meminfo, "SwapFree");
+
+	free(meminfo);
+	return data;
 }
 
 int main() {
-	char *meminfo = read_meminfo();
-	if (meminfo != NULL) {
-		long t = parse_field_meminfo(meminfo, "MemFree");
-		printf("%ld\n", t);
-		free(meminfo);
-	}
+    meminfo_data d = extract_data_from_meminfo();
+
+    printf("MemTotal:     %ld kB\n", d.ram_total);
+    printf("MemFree:      %ld kB\n", d.ram_free);
+    printf("MemAvailable: %ld kB\n", d.ram_available);
+    printf("SwapTotal:    %ld kB\n", d.swap_total);
+    printf("SwapFree:     %ld kB\n", d.swap_available);
+
 	return 0;
 }
