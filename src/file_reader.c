@@ -9,7 +9,7 @@
 char *read_file(char *file_name) {
 	FILE *meminfo_file = fopen(file_name, "r");
 	if (meminfo_file == NULL) {
-		perror("Error reading /proc/meminfo");
+		perror("Error reading");
 		return NULL;
 	}
 

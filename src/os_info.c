@@ -31,11 +31,16 @@ char *get_installed_packages(void) {
 	}
 
 	if (strcmp(distro_id, "arch") == 0 || strcmp(distro_id, "manjaro") == 0) {
-		// pacman -Q | wc -l
+		int number_of_packages;
+
 	} else if (strcmp(distro_id, "debian") == 0 || strcmp(distro_id, "ubuntu") == 0) {
-		// dpkg -l | wc -l
+		int number_of_packages;
+
 	} else if (strcmp(distro_id, "fedora") == 0 || strcmp(distro_id, "alma") == 0) {
-		// rpm -qa | wc -l
+		int number_of_packages;
+
+	} else {
+		int number_of_packages = -1;
 	}
 
 	free(content);
