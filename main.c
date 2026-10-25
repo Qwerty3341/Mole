@@ -1,5 +1,9 @@
 #include <stdio.h>
+#include "calc_filesize.h"
 
 int main() {
-	printf("Holamundo");
+
+	printf("File size: %ld bytes\n", calc_filesize("./README.md"));
+
+	return 0;
 }
