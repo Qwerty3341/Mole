@@ -8,4 +8,6 @@ struct OsInfo {
     char* architecture;
 };
 
+struct OsInfo get_os_info();
+
 #endif /* ifndef OS_INFO */
