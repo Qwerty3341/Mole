@@ -1,87 +1,70 @@
-/*OS Info
- * Will obtain:
- *	OS
- *	Kernel
- *	Packages
- *	Architecture
- * From files:
- *  /etc/os-release -> distro name
- *  /proc/version -> kernel version
- *  /proc/cpuinfo
- * */
-
 #include "os_info.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/utsname.h>
 
-void get_os(struct OsInfo* os_struct);
-char* get_distro(FILE* file, char** buffer, size_t* buffer_size);
-char* get_kernel(FILE* file, char** buffer, size_t* buffer_size);
+/* Info from os:
+ *  os name
+ *  distro
+ *  hostname
+ *  kernel_version
+ *  architecture
+ *  number of packages
+ * */
+
+static void get_distro(char *out, size_t out_size);
 
 struct OsInfo get_os_info()
 {
-    // Make the struct for the info
-    struct OsInfo data_from_os = { 0 };
+    // Make the structs for the info
+    struct OsInfo data = { 0 };
+    struct utsname os;
 
-    // Files names
-    char* files[] = { "/etc/os-release", "/proc/version" };
+    /* Uname info
+     *  sysname -> os name
+     *  nodename -> hostname
+     *  release -> kernel version
+     *  version -> kernel compilation
+     *  machine -> architecture
+     * */
 
-    // Make the buffer
-    char* buffer_lines = NULL;
-    size_t buffer_size = 0;
-
-    // Get distro
-    FILE* os_release = fopen(files[0], "r"); // file for distro name
-    if (os_release == NULL) {
-        perror("COULD NOT LOCATE /etc/os-release");
-    } else {
-        data_from_os.os = get_distro(os_release, &buffer_lines, &buffer_size);
-        fclose(os_release);
+    if (uname(&os) == 0) {
+        snprintf(data.os_name, sizeof data.os_name, "%s", os.sysname);
+        snprintf(data.hostname, sizeof data.hostname, "%s", os.nodename);
+        snprintf(data.kernel_version, sizeof data.kernel_version, "%s", os.release);
+        snprintf(data.kernel_compilation, sizeof data.kernel_compilation, "%s", os.version);
+        snprintf(data.architecture, sizeof data.architecture, "%s", os.machine);
     }
 
-    // Get kernel version
-    FILE* proc_version = fopen(files[1], "r"); // file for kernel version
-    if (proc_version == NULL) {
-        perror("COULD NOT LOCATE /proc/version");
-    } else {
-        data_from_os.kernel = get_kernel(proc_version, &buffer_lines, &buffer_size);
-		fclose(proc_version);
-    }
+    // Now get the distro
+    get_distro(data.distro, sizeof data.distro);
 
-    // free the buffer
-	free(buffer_lines);
-	
-	return data_from_os;
+    // Get the number of packages
+
+    return data;
 }
 
-char* get_distro(FILE* file, char** buffer, size_t* buffer_size)
+static void get_distro(char *out, size_t out_size)
 {
+    snprintf(out, out_size, "%s", "Unknown");
+
+    FILE *file = fopen("/etc/os-release", "r");
+    if (!file)
+        return;
+
+    char *line = NULL;
+    size_t line_size = 0;
     char value[250];
 
-    while (getline(buffer, buffer_size, file) != -1) {
-        if (sscanf(*buffer, "NAME=\"%249[^\"]", value) == 1
-            || scanf(*buffer, "NAME=\%249[^\n]", value) == 1) {
-            return strdup(value);
-        }
-    }
-    return strdup("Unknown (not found)");
-}
-
-char* get_kernel(FILE* file, char** buffer, size_t* buffer_size)
-{
-    char value[250];
-
-    // Find kernel info (Linux version 7.2.11-arch1-1)
-    while (getline(buffer, buffer_size, file) != -1) {
-        if (sscanf(*buffer, "Linux version %249s", value) == 1) {
-            return strdup(value);
+    while (getline(&line, &line_size, file) != -1) {
+        if (sscanf(line, "PRETTY_NAME=\"%249[^\"]", value) == 1
+            || sscanf(line, "PRETTY_NAME=%249[^\n]", value) == 1) {
+            snprintf(out, out_size, "%s", value);
+            break;
         }
     }
 
-    return strdup("Unknown (could not found)");
+    free(line);
+    fclose(file);
 }
-
-/* void get_packages(struct OsInfo* os_struct) { } */
-
-/* void get_arch(struct OsInfo* os_struct) { } */
