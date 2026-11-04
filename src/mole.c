@@ -1,5 +1,7 @@
 #include "os_info.h"
+#include "data_calculator.h"
 #include "ram.h"
+#include "resources.h"
 #include <os_info.h>
 #include <stdio.h>
 
@@ -15,6 +17,12 @@ void mole()
     printf("| Swap Free        :%lu\n", ram_info.swap_free);
 
     // RESOURSES
+    printf("#--------------------------------------------------------------------------------------#\n");
+    struct Resources resources_info = get_resources_info();
+    printf("| Disk Total       :%f GB\n", bytes_to_gb(resources_info.disk_total));
+    printf("| Disk Free        :%llu\n", resources_info.disk_used);
+    printf("| Disk Used        :%llu\n", resources_info.disk_free);
+
     // CPU / GPU
 
     // OS INFO
@@ -30,4 +38,8 @@ void mole()
     // NET INFO
 
     // IP
+
+    printf("\nTESTING GB\n");
+    printf("\tSwap Free        :%f GB\n", kb_to_gb(ram_info.swap_free));
+    printf("| RAM Free         :%f GB\n", kb_to_gb(ram_info.ram_free));
 }
