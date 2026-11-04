@@ -1,6 +1,6 @@
 #include "mole.h"
 
 int main() {
-	mole();
-	return 0;
+    mole();
+    return 0;
 }

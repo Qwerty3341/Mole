@@ -1,87 +1,96 @@
-/*OS Info
- * Will obtain:
- *	OS
- *	Kernel
- *	Packages
- *	Architecture
- * From files:
- *  /etc/os-release -> distro name
- *  /proc/version -> kernel version
- *  /proc/cpuinfo
- * */
-
 #include "os_info.h"
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/utsname.h>
 
-void get_os(struct OsInfo* os_struct);
-char* get_distro(FILE* file, char** buffer, size_t* buffer_size);
-char* get_kernel(FILE* file, char** buffer, size_t* buffer_size);
+/* Info from os:
+ *  os_name[200];
+ *  distro[200];
+ *  hostname[200];
+ *  kernel_version[200];
+ *  kernel_compilation[200];
+ *  architecture[65];
+ *  packages;
+ * */
+
+static void get_distro(char* out, size_t out_size);
+static unsigned long get_number_of_packages();
 
 struct OsInfo get_os_info()
 {
-    // Make the struct for the info
-    struct OsInfo data_from_os = { 0 };
+    // Make the structs for the info
+    struct OsInfo os_data = { 0 };
+    struct utsname os;
 
-    // Files names
-    char* files[] = { "/etc/os-release", "/proc/version" };
+    /* Uname info
+     *  sysname -> os name
+     *  nodename -> hostname
+     *  release -> kernel version
+     *  version -> kernel compilation
+     *  machine -> architecture
+     * */
 
-    // Make the buffer
-    char* buffer_lines = NULL;
-    size_t buffer_size = 0;
-
-    // Get distro
-    FILE* os_release = fopen(files[0], "r"); // file for distro name
-    if (os_release == NULL) {
-        perror("COULD NOT LOCATE /etc/os-release");
-    } else {
-        data_from_os.os = get_distro(os_release, &buffer_lines, &buffer_size);
-        fclose(os_release);
+    if (uname(&os) == 0) {
+        snprintf(os_data.os_name, sizeof os_data.os_name, "%s", os.sysname);
+        snprintf(os_data.hostname, sizeof os_data.hostname, "%s", os.nodename);
+        snprintf(os_data.kernel_version, sizeof os_data.kernel_version, "%s", os.release);
+        snprintf(os_data.kernel_compilation, sizeof os_data.kernel_compilation, "%s", os.version);
+        snprintf(os_data.architecture, sizeof os_data.architecture, "%s", os.machine);
     }
 
-    // Get kernel version
-    FILE* proc_version = fopen(files[1], "r"); // file for kernel version
-    if (proc_version == NULL) {
-        perror("COULD NOT LOCATE /proc/version");
-    } else {
-        data_from_os.kernel = get_kernel(proc_version, &buffer_lines, &buffer_size);
-		fclose(proc_version);
-    }
+    // Now get the distro
+    get_distro(os_data.distro, sizeof os_data.distro);
 
-    // free the buffer
-	free(buffer_lines);
-	
-	return data_from_os;
+    // Get the number of packages
+    os_data.packages = get_number_of_packages();
+
+    return os_data;
 }
 
-char* get_distro(FILE* file, char** buffer, size_t* buffer_size)
+static void get_distro(char* out, size_t out_size)
 {
+    snprintf(out, out_size, "%s", "Unknown");
+
+    FILE* file = fopen("/etc/os-release", "r");
+    if (!file)
+        return;
+
+    char* line = NULL;
+    size_t line_size = 0;
     char value[250];
 
-    while (getline(buffer, buffer_size, file) != -1) {
-        if (sscanf(*buffer, "NAME=\"%249[^\"]", value) == 1
-            || scanf(*buffer, "NAME=\%249[^\n]", value) == 1) {
-            return strdup(value);
+    while (getline(&line, &line_size, file) != -1) {
+        if (sscanf(line, "PRETTY_NAME=\"%249[^\"]", value) == 1
+            || sscanf(line, "PRETTY_NAME=%249[^\n]", value) == 1) {
+            snprintf(out, out_size, "%s", value);
+            break;
         }
     }
-    return strdup("Unknown (not found)");
+    free(line);
+    fclose(file);
 }
 
-char* get_kernel(FILE* file, char** buffer, size_t* buffer_size)
+static unsigned long get_number_of_packages()
 {
-    char value[250];
+    DIR* pacman_dir = opendir("/var/lib/pacman/local/");
+    if (pacman_dir == NULL) {
+        perror("Not able to open /var/lib/pacman/local/");
+        return 0;
+    }
+    struct dirent* dir_entry;
+    unsigned int counter = 0;
 
-    // Find kernel info (Linux version 7.2.11-arch1-1)
-    while (getline(buffer, buffer_size, file) != -1) {
-        if (sscanf(*buffer, "Linux version %249s", value) == 1) {
-            return strdup(value);
+    while ((dir_entry = readdir(pacman_dir)) != NULL) {
+        if (strcmp(dir_entry->d_name, ".") == 0 || strcmp(dir_entry->d_name, "..") == 0) {
+            continue;
+        }
+
+        if (dir_entry->d_type == DT_DIR) {
+            counter++;
         }
     }
-
-    return strdup("Unknown (could not found)");
+    closedir(pacman_dir);
+    return counter;
 }
-
-/* void get_packages(struct OsInfo* os_struct) { } */
-
-/* void get_arch(struct OsInfo* os_struct) { } */
