@@ -4,4 +4,7 @@
  *	Disk Free
  * */
 
+void get_resources_info()
+{
 
+}
