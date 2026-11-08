@@ -1,6 +1,7 @@
 #include "os_info.h"
 #include "data_calculator.h"
 #include "ram.h"
+#include "net.h"
 #include "resources.h"
 #include <os_info.h>
 #include <stdio.h>
@@ -38,8 +39,7 @@ void mole()
     // NET INFO
 
     // IP
-
-    printf("\nTESTING GB\n");
-    printf("\tSwap Free        :%f GB\n", kb_to_gb(ram_info.swap_free));
-    printf("| RAM Free         :%f GB\n", kb_to_gb(ram_info.ram_free));
+    struct NetInfo net_info = get_net_info();
+    printf("#--------------------------------------------------------------------------------------#\n");
+    printf("IP: %s\n", net_info.ip);
 }
